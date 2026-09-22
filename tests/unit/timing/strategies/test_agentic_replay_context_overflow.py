@@ -24,6 +24,7 @@ from aiperf.common.models import (
     DatasetMetadata,
     TurnMetadata,
 )
+from aiperf.common.scenario.base import TrajectoryWarmupFailedError
 from aiperf.credit.structs import Credit
 from aiperf.plugin.enums import DatasetSamplingStrategy
 from aiperf.timing.strategies.agentic_replay import AgenticReplayStrategy
@@ -311,3 +312,69 @@ async def test_no_error_falls_through_to_next_turn():
 
     assert ("trace_0", 3) in issued
     assert ("trace_1", 0) not in issued
+
+
+# ---------------------------------------------------------------------------
+# WARMUP: context-overflow drops the trace instead of failing warmup
+# ---------------------------------------------------------------------------
+
+
+def test_warmup_context_overflow_drops_trace_without_failing():
+    """A context-overflow on a WARMUP root drops the trace, not the run.
+
+    The server would reject this trace's prompt on every future turn too,
+    so it's excluded from the trajectory pool PROFILING draws from -
+    mirroring the PROFILING-phase short-circuit above - instead of
+    accumulating toward ``report_warmup_failures`` aborting the whole run.
+    """
+    trajectories = [
+        Trajectory(conversation_id="trace_0", start_turn_index=0),
+        Trajectory(conversation_id="trace_1", start_turn_index=0),
+    ]
+    ds = _make_dataset(num_traces=2, turns_per_trace=5)
+    strategy, _, _ = _make_strategy(
+        phase=CreditPhase.WARMUP, trajectories=trajectories, dataset=ds
+    )
+
+    strategy.record_warmup_failure(
+        "trace_0", "This model's maximum context length is 131072 tokens"
+    )
+
+    remaining = [t.conversation_id for t in strategy.conversation_source.trajectories]
+    assert remaining == ["trace_1"], (
+        f"overflowing trace should be dropped from the pool; got {remaining}"
+    )
+    assert strategy._failed_warmup_traces == []
+    strategy.report_warmup_failures()  # must not raise
+
+
+def test_warmup_non_overflow_error_still_fails_run():
+    """A non-overflow WARMUP failure still aborts PROFILING as before."""
+    trajectories = [Trajectory(conversation_id="trace_0", start_turn_index=0)]
+    ds = _make_dataset(num_traces=1, turns_per_trace=5)
+    strategy, _, _ = _make_strategy(
+        phase=CreditPhase.WARMUP, trajectories=trajectories, dataset=ds
+    )
+
+    strategy.record_warmup_failure("trace_0", "Internal server error: pool exhausted")
+
+    assert strategy._failed_warmup_traces == ["trace_0"]
+    remaining = [t.conversation_id for t in strategy.conversation_source.trajectories]
+    assert remaining == ["trace_0"], "non-overflow failures must not drop the trace"
+    with pytest.raises(TrajectoryWarmupFailedError):
+        strategy.report_warmup_failures()
+
+
+def test_warmup_failure_with_no_error_still_fails_run():
+    """A cancellation (error=None) at WARMUP is still a hard failure."""
+    trajectories = [Trajectory(conversation_id="trace_0", start_turn_index=0)]
+    ds = _make_dataset(num_traces=1, turns_per_trace=5)
+    strategy, _, _ = _make_strategy(
+        phase=CreditPhase.WARMUP, trajectories=trajectories, dataset=ds
+    )
+
+    strategy.record_warmup_failure("trace_0")  # error defaults to None
+
+    assert strategy._failed_warmup_traces == ["trace_0"]
+    with pytest.raises(TrajectoryWarmupFailedError):
+        strategy.report_warmup_failures()

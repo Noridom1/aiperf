@@ -209,16 +209,20 @@ class CreditCallbackHandler:
         handler = self._phase_handlers.get(phase)
         if not handler:
             _logger.debug(
-                lambda: f"Credit return for unregistered phase {phase}, "
-                f"credit_id={credit.id}, worker={worker_id}"
+                lambda: (
+                    f"Credit return for unregistered phase {phase}, "
+                    f"credit_id={credit.id}, worker={worker_id}"
+                )
             )
             return
 
         # Late arrivals after phase complete are logged but don't affect counts
         if handler.lifecycle.is_complete:
             _logger.warning(
-                lambda: f"Credit return after phase {phase} complete, "
-                f"credit_id={credit.id}, worker={worker_id}"
+                lambda: (
+                    f"Credit return after phase {phase} complete, "
+                    f"credit_id={credit.id}, worker={worker_id}"
+                )
             )
             return
 
@@ -291,9 +295,11 @@ class CreditCallbackHandler:
                     )
             except Exception as exc:  # noqa: BLE001
                 _logger.warning(
-                    lambda exc=exc: f"BranchOrchestrator child-completion "
-                    f"hook failed for x_correlation_id="
-                    f"{credit.x_correlation_id}: {exc}"
+                    lambda exc=exc: (
+                        f"BranchOrchestrator child-completion "
+                        f"hook failed for x_correlation_id="
+                        f"{credit.x_correlation_id}: {exc}"
+                    )
                 )
 
         # 5. Dispatch next turn / DAG spawn.
@@ -343,17 +349,21 @@ class CreditCallbackHandler:
                 )
             except Exception as exc:  # noqa: BLE001
                 _logger.warning(
-                    lambda exc=exc: f"BranchOrchestrator on_child_stopped "
-                    f"hook failed for x_correlation_id="
-                    f"{credit.x_correlation_id}: {exc}"
+                    lambda exc=exc: (
+                        f"BranchOrchestrator on_child_stopped "
+                        f"hook failed for x_correlation_id="
+                        f"{credit.x_correlation_id}: {exc}"
+                    )
                 )
 
         # WARMUP terminal-failure accumulation. AgenticReplayStrategy exposes
-        # ``record_warmup_failure(trace_id)``; PhaseRunner calls
+        # ``record_warmup_failure(trace_id, error)``; PhaseRunner calls
         # ``report_warmup_failures()`` at WARMUP teardown to abort PROFILING
         # if any trajectory burned its only warmup credit on a terminal error
-        # or cancellation. Duck-typed: only fires when the active strategy
-        # implements the hook, so non-replay strategies are unaffected.
+        # or cancellation. The strategy itself decides whether a given error
+        # (e.g. context-overflow) should drop the trace instead of aborting.
+        # Duck-typed: only fires when the active strategy implements the
+        # hook, so non-replay strategies are unaffected.
         if (
             phase == CreditPhase.WARMUP
             and credit.is_final_turn
@@ -364,7 +374,7 @@ class CreditCallbackHandler:
                 handler.strategy, "record_warmup_failure", None
             )
             if record_warmup_failure is not None:
-                record_warmup_failure(credit.conversation_id)
+                record_warmup_failure(credit.conversation_id, credit_return.error)
 
         # Deferred all-credits-returned check. Runs on EVERY return — root
         # or child — because child returns don't bump the phase counters
@@ -419,7 +429,9 @@ class CreditCallbackHandler:
             in_flight = handler.progress.in_flight_sessions
             if in_flight > 0:
                 _logger.debug(
-                    lambda: f"Releasing {in_flight} in-flight session slots for phase {phase}"
+                    lambda: (
+                        f"Releasing {in_flight} in-flight session slots for phase {phase}"
+                    )
                 )
                 for _ in range(in_flight):
                     concurrency.release_session_slot(phase)
@@ -443,8 +455,10 @@ class CreditCallbackHandler:
 
         if not handler:
             _logger.debug(
-                lambda: f"TTFT for unregistered phase {phase}, "
-                f"credit_id={first_token.credit_id}"
+                lambda: (
+                    f"TTFT for unregistered phase {phase}, "
+                    f"credit_id={first_token.credit_id}"
+                )
             )
             return
 

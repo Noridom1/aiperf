@@ -11,11 +11,14 @@ warmup barrier).
 
 Warmup-failure accumulation: terminal failures (``credit_return.error`` or
 ``credit_return.cancelled``) on a WARMUP credit's final turn are routed by
-``CreditCallbackHandler`` into ``record_warmup_failure(trace_id)``. At
-WARMUP teardown, ``PhaseRunner`` calls ``report_warmup_failures()`` which
-raises ``TrajectoryWarmupFailedError`` if any failures were recorded. This
-aborts PROFILING so steady-state metrics aren't silently biased by a
-degraded trajectory pool.
+``CreditCallbackHandler`` into ``record_warmup_failure(trace_id, error)``. A
+context-overflow error drops that trace from the trajectory pool instead
+(the server would reject it on every future turn too, same as the
+PROFILING-phase short-circuit below). Any other error accumulates toward
+``report_warmup_failures``, which ``PhaseRunner`` calls at WARMUP teardown
+and raises ``TrajectoryWarmupFailedError`` if any were recorded, aborting
+PROFILING so steady-state metrics aren't silently biased by a degraded
+trajectory pool.
 
 PROFILING: each trajectory resumes at ``k_i + 1``; subsequent turns honor
 trace inter-turn ``delay_ms`` (already clamped upstream in the loader). When
@@ -246,7 +249,9 @@ class AgenticReplayStrategy(AIPerfLoggerMixin):
                 self.debug(
                     lambda cid=trajectory.conversation_id,
                     k=trajectory.start_turn_index,
-                    n=num_turns: f"Trajectory {cid} k_i={k} >= last turn (n={n}); recycling immediately"
+                    n=num_turns: (
+                        f"Trajectory {cid} k_i={k} >= last turn (n={n}); recycling immediately"
+                    )
                 )
                 await self._spawn_from_recycle_or_id(
                     trajectory.conversation_id,
@@ -513,13 +518,34 @@ class AgenticReplayStrategy(AIPerfLoggerMixin):
         self._session_marker[x_correlation_id] = marker
         return marker
 
-    def record_warmup_failure(self, trace_id: str) -> None:
-        """Accumulate a terminal warmup credit failure for later reporting.
+    def record_warmup_failure(self, trace_id: str, error: str | None = None) -> None:
+        """Accumulate a terminal warmup credit failure, or drop a context-overflow trace.
 
         Invoked by ``CreditCallbackHandler`` on every WARMUP credit return
-        whose final turn carried an error or cancellation. Per-trajectory
-        attribution stays alongside the trajectory list itself.
+        whose final turn carried an error or cancellation. A context-overflow
+        error means the trace itself exceeds the server's context limit -
+        the server would reject it on every future turn too, so the trace is
+        dropped from the trajectory pool instead of failing the whole
+        warmup (mirrors the PROFILING-phase context-overflow short-circuit
+        in ``handle_credit_return``). Any other error still accumulates
+        toward ``report_warmup_failures`` aborting PROFILING, since that
+        indicates a real server/infra problem, not a bad trace.
         """
+        if error is not None and is_context_overflow_response(body=error):
+            before = len(self.conversation_source.trajectories)
+            self.conversation_source.trajectories = [
+                t
+                for t in self.conversation_source.trajectories
+                if t.conversation_id != trace_id
+            ]
+            dropped = before - len(self.conversation_source.trajectories)
+            self.info(
+                lambda tid=trace_id, n=dropped: (
+                    f"WARMUP context-overflow on trace_id={tid}: dropping "
+                    f"{n} matching trajectory/ies instead of failing warmup"
+                )
+            )
+            return
         self._failed_warmup_traces.append(trace_id)
 
     def report_warmup_failures(self) -> None:

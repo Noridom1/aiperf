@@ -103,6 +103,56 @@ class TestCoreFunctionality:
         assert isinstance(composer.loader, SpeedBenchLoader)
         assert composer.loader.category == "coding"
 
+    @pytest.mark.parametrize(
+        ("name", "attrs"),
+        [
+            (
+                "greenspec",
+                {"category": None, "bucket": None, "lite": None, "recorded": False},
+            ),
+            ("greenspec_lite", {"lite": True}),
+            (
+                "greenspec_agentic_tools_lite",
+                {"category": "agentic_tools", "lite": True},
+            ),
+            ("greenspec_llm_task_recorded", {"category": "llm_task", "recorded": True}),
+            ("greenspec_agentic_coding_64k_plus", {"bucket": "agentic_coding__64k+"}),
+            ("greenspec_llm_task_0_1k", {"bucket": "llm_task__0-1k"}),
+        ],
+    )
+    def test_create_loader_instance_passes_greenspec_metadata(
+        self, custom_config, mock_tokenizer, name, attrs
+    ):
+        from aiperf.dataset.loader.greenspec import GreenSpecLoader
+
+        dataset_type = CustomDatasetType(name)
+        custom_config.custom_dataset_type = dataset_type
+        composer = CustomDatasetComposer(
+            run=make_run(custom_config), tokenizer=mock_tokenizer
+        )
+        composer._create_loader_instance(dataset_type)
+
+        assert isinstance(composer.loader, GreenSpecLoader)
+        for key, value in attrs.items():
+            assert getattr(composer.loader, key) == value
+
+    def test_bucket_metadata_raises_for_unsupported_loader(
+        self, custom_config, mock_tokenizer
+    ):
+        from aiperf.plugin.schema.schemas import CustomDatasetLoaderMetadata
+
+        composer = CustomDatasetComposer(
+            run=make_run(custom_config), tokenizer=mock_tokenizer
+        )
+        with (
+            patch(
+                "aiperf.dataset.composer.custom.plugins.get_dataset_loader_metadata",
+                return_value=CustomDatasetLoaderMetadata(bucket="b"),
+            ),
+            pytest.raises(ValueError, match="'bucket'"),
+        ):
+            composer._create_loader_instance(CustomDatasetType.SINGLE_TURN)
+
     def test_no_category_in_kwargs_when_none(self, custom_config, mock_tokenizer):
         from aiperf.plugin.schema.schemas import CustomDatasetLoaderMetadata
 

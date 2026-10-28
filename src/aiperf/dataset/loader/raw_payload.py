@@ -56,6 +56,9 @@ class RawPayloadDatasetLoader(BaseRawPayloadLoader):
                 return False
             if is_speed_bench_row(data):
                 return False
+            # GreenSpec rows carry metadata keys that must not reach the server
+            if all(k in data for k in ("question_id", "category", "bucket", "lite")):
+                return False
             if not isinstance(data.get("messages"), list):
                 return False
             if "conversation_id" in data:

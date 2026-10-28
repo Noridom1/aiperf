@@ -389,6 +389,27 @@ class CustomDatasetLoaderMetadata(BaseModel):
             "When true, each row becomes one Conversation with multiple Turn objects."
         ),
     )
+    bucket: str | None = Field(
+        default=None,
+        description=(
+            "Filter dataset rows to a specific bucket value. Used by custom "
+            "loaders that support per-bucket subsets (e.g. GreenSpec)."
+        ),
+    )
+    lite: bool | None = Field(
+        default=None,
+        description=(
+            "Filter dataset rows on their lite flag. Used by custom loaders "
+            "that ship a lite subset inside the full file (e.g. GreenSpec)."
+        ),
+    )
+    recorded: bool | None = Field(
+        default=None,
+        description=(
+            "Send each row's recorded request params (sampling, thinking switch) "
+            "instead of the server defaults. Used by GreenSpec."
+        ),
+    )
 
 
 class PublicDatasetLoaderMetadata(BaseModel):

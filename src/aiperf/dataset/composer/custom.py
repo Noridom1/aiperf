@@ -321,6 +321,16 @@ class CustomDatasetComposer(BaseDatasetComposer):
 
         LoaderClass = plugins.get_class(PluginType.CUSTOM_DATASET_LOADER, dataset_type)
 
+        for key in ("bucket", "lite", "recorded"):
+            value = getattr(loader_metadata, key)
+            if value is None:
+                continue
+            if not self._loader_accepts_kwarg(LoaderClass, key):
+                raise ValueError(
+                    f"Loader {LoaderClass.__name__} does not support the {key!r} parameter."
+                )
+            kwargs[key] = value
+
         if loader_metadata.multi_turn:
             if not self._loader_accepts_kwarg(LoaderClass, "multi_turn"):
                 raise ValueError(

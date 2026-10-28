@@ -596,6 +596,218 @@ custom_dataset_loader:
       Does NOT support multi-turn features.
 
   # ---------------------------------------------------------------------------
+  # GreenSpec: one flat greenspec.jsonl, a subset per preset (category /
+  # bucket / lite). *_recorded sends each row's recorded request params.
+  # ---------------------------------------------------------------------------
+
+  greenspec:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec, every row (3,072 in v1.1.0).
+
+  greenspec_lite:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec lite: a quarter of every bucket (768).
+    metadata:
+      lite: true
+
+  greenspec_agentic_coding:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_coding (1,024).
+    metadata:
+      category: agentic_coding
+
+  greenspec_agentic_coding_lite:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_coding, lite (256).
+    metadata:
+      category: agentic_coding
+      lite: true
+
+  greenspec_agentic_tools:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_tools (1,024).
+    metadata:
+      category: agentic_tools
+
+  greenspec_agentic_tools_lite:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_tools, lite (256).
+    metadata:
+      category: agentic_tools
+      lite: true
+
+  greenspec_llm_task:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case llm_task (1,024).
+    metadata:
+      category: llm_task
+
+  greenspec_llm_task_lite:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case llm_task, lite (256).
+    metadata:
+      category: llm_task
+      lite: true
+
+  greenspec_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec, every row (3,072 in v1.1.0), recorded request params.
+    metadata:
+      recorded: true
+
+  greenspec_lite_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec lite: a quarter of every bucket (768), recorded request params.
+    metadata:
+      lite: true
+      recorded: true
+
+  greenspec_agentic_coding_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_coding (1,024), recorded request params.
+    metadata:
+      category: agentic_coding
+      recorded: true
+
+  greenspec_agentic_coding_lite_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_coding, lite (256), recorded request params.
+    metadata:
+      category: agentic_coding
+      lite: true
+      recorded: true
+
+  greenspec_agentic_tools_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_tools (1,024), recorded request params.
+    metadata:
+      category: agentic_tools
+      recorded: true
+
+  greenspec_agentic_tools_lite_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case agentic_tools, lite (256), recorded request params.
+    metadata:
+      category: agentic_tools
+      lite: true
+      recorded: true
+
+  greenspec_llm_task_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case llm_task (1,024), recorded request params.
+    metadata:
+      category: llm_task
+      recorded: true
+
+  greenspec_llm_task_lite_recorded:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec use case llm_task, lite (256), recorded request params.
+    metadata:
+      category: llm_task
+      lite: true
+      recorded: true
+
+  greenspec_agentic_coding_0_8k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_coding__0-8k (256).
+    metadata:
+      bucket: "agentic_coding__0-8k"
+
+  greenspec_agentic_coding_8k_32k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_coding__8k-32k (256).
+    metadata:
+      bucket: "agentic_coding__8k-32k"
+
+  greenspec_agentic_coding_32k_64k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_coding__32k-64k (256).
+    metadata:
+      bucket: "agentic_coding__32k-64k"
+
+  greenspec_agentic_coding_64k_plus:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_coding__64k+ (256).
+    metadata:
+      bucket: "agentic_coding__64k+"
+
+  greenspec_agentic_tools_0_4k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_tools__0-4k (256).
+    metadata:
+      bucket: "agentic_tools__0-4k"
+
+  greenspec_agentic_tools_4k_16k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_tools__4k-16k (256).
+    metadata:
+      bucket: "agentic_tools__4k-16k"
+
+  greenspec_agentic_tools_16k_32k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_tools__16k-32k (256).
+    metadata:
+      bucket: "agentic_tools__16k-32k"
+
+  greenspec_agentic_tools_32k_plus:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket agentic_tools__32k+ (256).
+    metadata:
+      bucket: "agentic_tools__32k+"
+
+  greenspec_llm_task_0_1k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket llm_task__0-1k (256).
+    metadata:
+      bucket: "llm_task__0-1k"
+
+  greenspec_llm_task_1k_4k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket llm_task__1k-4k (256).
+    metadata:
+      bucket: "llm_task__1k-4k"
+
+  greenspec_llm_task_4k_16k:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket llm_task__4k-16k (256).
+    metadata:
+      bucket: "llm_task__4k-16k"
+
+  greenspec_llm_task_16k_plus:
+    class: aiperf.dataset.loader.greenspec:GreenSpecLoader
+    description: |
+      GreenSpec bucket llm_task__16k+ (256).
+    metadata:
+      bucket: "llm_task__16k+"
+
+  # ---------------------------------------------------------------------------
   # SPEED-Bench: qualitative split (all categories combined)
   # ---------------------------------------------------------------------------
   speed_bench_qualitative:
